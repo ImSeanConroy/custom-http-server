@@ -9,9 +9,18 @@ server_socket.listen(5)
 
 while True:
     client_socket, addr = server_socket.accept()
-    print("Connection from", addr)
+    print("===================")
+    print("Connection Address:", addr[0])
+    print("Connection Port:", addr[1])
+
+    request = client_socket.recv(1024).decode()
+    request_line = request.splitlines()[0]
+    method, path, version = request_line.split()
+
+    print("Method:", method)
+    print("Path:", path)
+    print("Version:", version)
 
     response = "HTTP/1.1 200 OK\r\n\r\n"
     client_socket.sendall(response.encode())
-
     client_socket.close()
