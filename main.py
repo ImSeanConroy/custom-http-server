@@ -21,6 +21,22 @@ while True:
     print("Path:", path)
     print("Version:", version)
 
-    response = "HTTP/1.1 200 OK\r\n\r\n"
+    headers = {}
+    for line in request.splitlines()[1:]:
+        if line == "":
+            break
+        key, value = line.split(":", 1)
+        headers[key.strip()] = value.strip()
+
+    print("Headers:", headers)
+
+    body = f"You requested {path}"
+    response = (
+        "HTTP/1.1 200 OK\r\n"
+        f"Content-Length: {len(body)}\r\n"
+        "\r\n"
+        f"{body}"
+    )
+
     client_socket.sendall(response.encode())
     client_socket.close()
