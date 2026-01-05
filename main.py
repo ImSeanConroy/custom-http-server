@@ -22,7 +22,14 @@ def handle_client(client_socket):
 
     print("Headers:", headers)
 
-    body = f"You requested {path}"
+    body = ""
+    if "content-length" in headers:
+        length = int(headers["content-length"])
+        body = client_socket.recv(length).decode()
+
+    print("Body:", body)
+
+    body = f"Path: {path}\nBody: {body}"
     response = (
         "HTTP/1.1 200 OK\r\n"
         f"Content-Length: {len(body)}\r\n"
