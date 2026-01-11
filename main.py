@@ -29,10 +29,11 @@ def handle_client(client_socket):
 
     print("Body:", body)
 
-    body = f"Path: {path}\nBody: {body}"
+    body = f"Method:{method}\nVersion:{version}\nPath: {path}\nBody: {body}"
     response = (
         "HTTP/1.1 200 OK\r\n"
         f"Content-Length: {len(body)}\r\n"
+        "Content-Type: text/plain\r\n"
         "\r\n"
         f"{body}"
     )
@@ -40,11 +41,11 @@ def handle_client(client_socket):
     client_socket.sendall(response.encode())
     client_socket.close()
 
-if __name__ == "__main__":
-
+def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
+    print(f"Server listening on {HOST}:{PORT}")
 
     while True:
         client_socket, addr = server_socket.accept()
@@ -52,6 +53,7 @@ if __name__ == "__main__":
         print("Connection Address:", addr[0])
         print("Connection Port:", addr[1])
 
-        threading.Thread(target=handle_client, args=(client_socket,)).start()
-        
-        
+        threading.Thread(target=handle_client, args=(client_socket,), daemon=True).start()
+
+if __name__ == "__main__":
+    main()
