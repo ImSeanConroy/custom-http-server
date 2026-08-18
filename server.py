@@ -2,28 +2,28 @@ import socket
 import threading
 import signal
 import logging
-from typing import Dict, Tuple
 
+from typing import Dict, Tuple
 
 class HttpServer:
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8080, buffer_size: int = 1024, response_timeout: int = 5):
         self.host = host
         self.port = port
-        self.buffer_size = buffer_size
-        self.response_timeout = response_timeout
+        self._buffer_size = buffer_size
+        self._response_timeout = response_timeout
 
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s [%(levelname)s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S"
         )
-        self.logger = logging.getLogger("HttpServer")
+        self._logger = logging.getLogger("HttpServer")
 
     # -------------------------------
     # HTTP helpers
     # -------------------------------
-    def send_response(self, client_socket: socket.socket, status_code: int, body: str) -> None:
+    def _send_response(self, client_socket: socket.socket, status_code: int, body: str) -> None:
         """
         Send an HTTP response to the client.
 
@@ -50,9 +50,9 @@ class HttpServer:
         try:
             client_socket.sendall(response)
         except Exception as e:
-            self.logger.warning(f"Failed to send response: {e}")
+            self._logger.warning(f"Failed to send response: {e}")
 
-    def parse_headers(self, lines) -> Dict[str, str]:
+    def _parse_headers(self, lines) -> Dict[str, str]:
         """
         Parse HTTP headers into a dictionary.
 
@@ -73,7 +73,7 @@ class HttpServer:
     # -------------------------------
     # Client handler
     # -------------------------------
-    def handle_client(self, client_socket: socket.socket, addr: Tuple[str, int]) -> None:
+    def _handle_client(self, client_socket: socket.socket, addr: Tuple[str, int]) -> None:
         """
         Handle a single client connection.
 
@@ -91,8 +91,8 @@ class HttpServer:
             None
         """
         try:
-            client_socket.settimeout(self.response_timeout)
-            request = client_socket.recv(self.buffer_size)
+            client_socket.settimeout(self._response_timeout)
+            request = client_socket.recv(self._buffer_size)
             if not request:
                 return
 
@@ -103,18 +103,18 @@ class HttpServer:
             try:
                 method, path, version = request_line.split()
             except ValueError:
-                self.send_response(client_socket, 400, "Bad Request")
+                self._send_response(client_socket, 400, "Bad Request")
                 print(f"[{addr[0]}:{addr[1]}] Malformed request line")
                 return
 
-            headers = self.parse_headers(lines[1:])
+            headers = self._parse_headers(lines[1:])
 
             body = ""
             if "content-length" in headers:
                 length = int(headers["content-length"])
                 body = body_bytes[:length].decode("utf-8", errors="replace")
 
-            self.logger.info(f"[{addr[0]}:{addr[1]}] {method} {path}")
+            self._logger.info(f"[{addr[0]}:{addr[1]}] {method} {path}")
 
             headers = "\n".join(f"\t{k}: {v}" for k, v in headers.items())
             response_body = (
@@ -125,14 +125,14 @@ class HttpServer:
                 f"Body: \n{body}"
             )
 
-            self.send_response(client_socket, 200, response_body)
+            self._send_response(client_socket, 200, response_body)
 
         except socket.timeout:
-            self.logger.warning(f"[{addr[0]}:{addr[1]}] Connection timed out")
+            self._logger.warning(f"[{addr[0]}:{addr[1]}] Connection timed out")
         except Exception as e:
-            self.logger.error(f"[{addr[0]}:{addr[1]}] Error: {e}")
+            self._logger.error(f"[{addr[0]}:{addr[1]}] Error: {e}")
             try:
-                self.send_response(client_socket, 500, "Internal Server Error")
+                self._send_response(client_socket, 500, "Internal Server Error")
             except Exception:
                 pass
         finally:
@@ -153,16 +153,16 @@ class HttpServer:
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server_socket.bind(self.host, self.port)
+            server_socket.bind((self.host, self.port))
             server_socket.listen()
               
-            self.logger.info(f"Server listening on {self.host}:{self.port}")
-            self.logger.info("Press Ctrl+C to stop the server.\n")
+            self._logger.info(f"Server listening on {self.host}:{self.port}")
+            self._logger.info("Press Ctrl+C to stop the server.\n")
 
             while True:
                 client_socket, addr = server_socket.accept()
                 thread = threading.Thread(
-                    target=self.handle_client,
+                    target=self._handle_client,
                     args=(client_socket, addr),
                     daemon=True)
                 thread.start()
