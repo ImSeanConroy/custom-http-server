@@ -160,7 +160,12 @@ class HttpServer:
             self._logger.info("Press Ctrl+C to stop the server.\n")
 
             while True:
-                client_socket, addr = server_socket.accept()
+                try:
+                    client_socket, addr = server_socket.accept()
+                except KeyboardInterrupt:
+                    self._logger.info("Shutting down HTTP server.")
+                    break
+
                 thread = threading.Thread(
                     target=self._handle_client,
                     args=(client_socket, addr),
